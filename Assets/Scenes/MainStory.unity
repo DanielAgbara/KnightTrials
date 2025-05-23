@@ -241,8 +241,8 @@ MonoBehaviour:
   m_text: "Now, evil stirs once more\u2014and only those who prove themselves in
     the ancient Elemental Trials can rise to stop it"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
+  m_sharedMaterial: {fileID: -1544243932324802073, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -503,10 +503,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Earth, Ice, and Fire await
+  m_text: Earth, Ice, and Muze await
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
+  m_sharedMaterial: {fileID: -1544243932324802073, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -696,8 +696,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Your journey begins now...
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
+  m_sharedMaterial: {fileID: -1544243932324802073, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -869,8 +869,8 @@ MonoBehaviour:
   m_text: In an age long past, the bravest knights protected the realm from a great
     darkness. But their order faded into legend...
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
+  m_sharedMaterial: {fileID: -1544243932324802073, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1034,6 +1034,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1755624691}
   - component: {fileID: 1755624690}
+  - component: {fileID: 1755624692}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -1121,6 +1122,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!114 &1755624692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1755624689}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 3
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_RenderingLayers: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_ShadowRenderingLayers: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
 --- !u!1 &2059351845
 GameObject:
   m_ObjectHideFlags: 0
