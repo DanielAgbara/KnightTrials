@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody))]
 public class ThirdPersonMovement : MonoBehaviour
@@ -7,125 +6,91 @@ public class ThirdPersonMovement : MonoBehaviour
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float sprintSpeed = 8f;
-    public float rotationSpeed = 10f;
     public float jumpForce = 5f;
     public float groundCheckDistance = 0.2f;
     public LayerMask groundLayer;
 
-    [Header("Sprint Settings")]
-    public float maxSprintDuration = 3f;
-    public float sprintCooldown = 3f;
-    public float sprintRechargeTime = 5f;
-    public float minSprintThreshold = 0.5f;
-    public Slider sprintSlider;
+    [Header("Mouse Rotation Settings")]
+    public float mouseSensitivity = 2f;
 
-    [Header("Camera")]
-    public Transform cameraTransform;
+    [Header("Camera Reference")]
+    public Transform cameraTransform; // Assign to FreeLook Camera
 
     private Rigidbody rb;
     private bool isGrounded;
-    private float currentSprintTime;
-    private float currentCooldown;
-    private bool isSprinting;
-    private bool isCooldown;
+    private Animator animator;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
-        currentSprintTime = maxSprintDuration;
-        UpdateSprintUI();
+
+        animator = GetComponent<Animator>();
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void Update()
     {
-        // Handle jumping
+        // Handle rotation with smoothing
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        Quaternion newRotation = Quaternion.Euler(0f, transform.eulerAngles.y + mouseX, 0f);
+        transform.rotation = Quaternion.Slerp(transform.rotation, newRotation, 10f * Time.deltaTime);
+
+        // Jump
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            animator.SetBool("IsJumping", true);
         }
 
-        // Handle sprint input
-        bool wantsToSprint = Input.GetKey(KeyCode.LeftShift);
-        
-        if (wantsToSprint)
+        // Toggle mouse lock
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            TryStartSprint();
-        }
-        else
-        {
-            StopSprint();
+            Cursor.lockState = Cursor.lockState == CursorLockMode.Locked
+                ? CursorLockMode.None
+                : CursorLockMode.Locked;
+            Cursor.visible = !Cursor.visible;
         }
 
-        // Force stop sprinting if stamina is depleted
-        if (isSprinting && currentSprintTime <= 0)
+        // Snap to camera
+        if (Input.GetKeyDown(KeyCode.R))
         {
-            StopSprint();
-            isCooldown = true;
-            currentCooldown = sprintCooldown;
-        }
-
-        // Handle cooldown and recharge
-        if (isCooldown)
-        {
-            currentCooldown -= Time.deltaTime;
-            if (currentCooldown <= 0) 
+            Vector3 camForward = Vector3.Scale(cameraTransform.forward, new Vector3(1, 0, 1)).normalized;
+            if (camForward.sqrMagnitude > 0.01f)
             {
-                isCooldown = false;
+                Quaternion lookRotation = Quaternion.LookRotation(camForward);
+                transform.rotation = lookRotation;
             }
         }
-        else if (!isSprinting && currentSprintTime < maxSprintDuration)
-        {
-            currentSprintTime += Time.deltaTime * (maxSprintDuration / sprintRechargeTime);
-            currentSprintTime = Mathf.Min(currentSprintTime, maxSprintDuration);
-            UpdateSprintUI();
-        }
+
+        // Animation speed control
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
+        float inputMagnitude = Mathf.Clamp01(new Vector3(horizontal, 0, vertical).magnitude);
+        animator.SetFloat("Speed", inputMagnitude);
     }
 
     void FixedUpdate()
     {
+        // Ground check
         isGrounded = Physics.Raycast(transform.position, Vector3.down, groundCheckDistance, groundLayer);
+        if (isGrounded)
+        {
+            animator.SetBool("IsJumping", false);
+        }
 
+        // Movement
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
-
-        Vector3 cameraForward = Vector3.Scale(cameraTransform.forward, new Vector3(1, 0, 1)).normalized;
-        Vector3 moveDirection = (vertical * cameraForward + horizontal * cameraTransform.right).normalized;
+        Vector3 moveDirection = transform.forward * vertical + transform.right * horizontal;
+        moveDirection = moveDirection.normalized;
 
         if (moveDirection != Vector3.zero)
         {
-            float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
+            float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : moveSpeed;
             rb.MovePosition(rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime);
-            
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime));
-        }
-    }
-
-    void TryStartSprint()
-    {
-        // Can't sprint if in cooldown or not enough stamina (now 50%)
-        if (isCooldown || currentSprintTime < maxSprintDuration * minSprintThreshold)
-        {
-            StopSprint();
-            return;
-        }
-
-        isSprinting = true;
-        currentSprintTime -= Time.deltaTime;
-        UpdateSprintUI();
-    }
-
-    void StopSprint()
-    {
-        isSprinting = false;
-    }
-
-    void UpdateSprintUI()
-    {
-        if (sprintSlider != null)
-        {
-            sprintSlider.value = currentSprintTime / maxSprintDuration;
         }
     }
 }
