@@ -19,6 +19,6 @@ public class MainStory : MonoBehaviour
     {
         // Change the name of the scene when we have the main gameplay scene
         // For now, I just leave it as "Intro"
-        SceneManager.LoadScene("Intro", LoadSceneMode.Single);
+        SceneManager.LoadScene("MudMaze", LoadSceneMode.Single);
     }
 }
