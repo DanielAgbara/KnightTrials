@@ -1,30 +1,31 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class ThirdPersonMovement : MonoBehaviour
+public class ThirdPersonPlayer : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float moveSpeed = 5f;
-    public float sprintSpeed = 8f;
+    public float walkSpeed = 20f;
+    public float runSpeed = 30f;
     public float jumpForce = 5f;
     public float groundCheckDistance = 0.2f;
     public LayerMask groundLayer;
 
-    [Header("Mouse Rotation Settings")]
+    [Header("Mouse Look Settings")]
     public float mouseSensitivity = 2f;
 
     [Header("Camera Reference")]
-    public Transform cameraTransform; // Assign to FreeLook Camera
+    public Transform cameraTransform;
+
+    
 
     private Rigidbody rb;
-    private bool isGrounded;
     private Animator animator;
+    private bool isGrounded;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
-
         animator = GetComponent<Animator>();
 
         Cursor.lockState = CursorLockMode.Locked;
@@ -33,64 +34,123 @@ public class ThirdPersonMovement : MonoBehaviour
 
     void Update()
     {
-        // Handle rotation with smoothing
+        HandleRotation();
+        HandleActions();
+        UpdateAnimatorParameters();
+        ToggleCursor();
+        SnapToCameraDirection();
+    }
+
+    void FixedUpdate()
+    {
+        CheckGround();
+        HandleMovement();
+    }
+
+    // ------------------ Movement and Rotation ------------------
+    void HandleRotation()
+    {
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         Quaternion newRotation = Quaternion.Euler(0f, transform.eulerAngles.y + mouseX, 0f);
         transform.rotation = Quaternion.Slerp(transform.rotation, newRotation, 10f * Time.deltaTime);
+    }
 
+    void HandleMovement()
+    {
+        float inputX = Input.GetAxis("Horizontal");
+        float inputZ = Input.GetAxis("Vertical");
+
+        Vector3 moveDirection = transform.forward * inputZ + transform.right * inputX;
+        moveDirection = moveDirection.normalized;
+
+        float moveAmount = moveDirection.magnitude;
+        bool isTryingToMove = moveAmount > 0.1f;
+        bool isShiftHeld = Input.GetKey(KeyCode.LeftShift);
+        bool shouldRun = isTryingToMove && isShiftHeld;
+
+        float speed = shouldRun ? runSpeed : walkSpeed;
+
+        if (isTryingToMove)
+        {
+            rb.MovePosition(rb.position + moveDirection * speed * Time.fixedDeltaTime);
+        }
+    }
+
+    void CheckGround()
+    {
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.1f;
+        isGrounded = Physics.Raycast(rayOrigin, Vector3.down, groundCheckDistance + 0.1f, groundLayer);
+        Debug.DrawRay(rayOrigin, Vector3.down * (groundCheckDistance + 0.1f), Color.red);
+    }
+
+    // ------------------ Player Actions ------------------
+    void HandleActions()
+    {
         // Jump
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            animator.SetBool("IsJumping", true);
+            animator.SetTrigger("IsJumping"); // Assuming 'IsJumping' is a trigger
         }
 
-        // Toggle mouse lock
+        // Attack
+        if (Input.GetMouseButtonDown(0))
+        {
+            animator.SetTrigger("IsAttacking");
+        }
+
+        // Block
+        bool isBlocking = Input.GetMouseButton(1);
+        animator.SetBool("IsBlocking", isBlocking);
+    }
+
+    // ------------------ Animator Parameters ------------------
+    void UpdateAnimatorParameters()
+    {
+        float inputX = Input.GetAxis("Horizontal");
+        float inputZ = Input.GetAxis("Vertical");
+        bool isMoving = new Vector3(inputX, 0, inputZ).magnitude > 0.1f;
+
+        float speedParam = 0f;
+
+        if (isMoving)
+        {
+            if (Input.GetKey(KeyCode.LeftShift))
+                speedParam = 2.0f; // Run
+            else
+                speedParam = 0.5f; // Walk
+        }
+
+        animator.SetFloat("Speed", speedParam);
+    }
+
+    // ------------------ Utility ------------------
+    void ToggleCursor()
+    {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            Cursor.lockState = Cursor.lockState == CursorLockMode.Locked
-                ? CursorLockMode.None
-                : CursorLockMode.Locked;
-            Cursor.visible = !Cursor.visible;
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
+    }
 
-        // Snap to camera
+    void SnapToCameraDirection()
+    {
         if (Input.GetKeyDown(KeyCode.R))
         {
             Vector3 camForward = Vector3.Scale(cameraTransform.forward, new Vector3(1, 0, 1)).normalized;
             if (camForward.sqrMagnitude > 0.01f)
             {
-                Quaternion lookRotation = Quaternion.LookRotation(camForward);
-                transform.rotation = lookRotation;
+                transform.rotation = Quaternion.LookRotation(camForward);
             }
-        }
-
-        // Animation speed control
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-        float inputMagnitude = Mathf.Clamp01(new Vector3(horizontal, 0, vertical).magnitude);
-        animator.SetFloat("Speed", inputMagnitude);
-    }
-
-    void FixedUpdate()
-    {
-        // Ground check
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, groundCheckDistance, groundLayer);
-        if (isGrounded)
-        {
-            animator.SetBool("IsJumping", false);
-        }
-
-        // Movement
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-        Vector3 moveDirection = transform.forward * vertical + transform.right * horizontal;
-        moveDirection = moveDirection.normalized;
-
-        if (moveDirection != Vector3.zero)
-        {
-            float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : moveSpeed;
-            rb.MovePosition(rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime);
         }
     }
 }
