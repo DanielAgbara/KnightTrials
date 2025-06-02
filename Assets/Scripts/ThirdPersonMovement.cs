@@ -16,7 +16,13 @@ public class ThirdPersonPlayer : MonoBehaviour
     [Header("Camera Reference")]
     public Transform cameraTransform;
 
-    
+    [Header("Ice Physics Settings")]
+    public float iceDrag = 0.5f;          // Lower drag = more slippery
+    public float iceAngularDrag = 0.1f;   // Prevents rotation from getting out of control
+    public float iceSpeedMultiplier = 1.5f; // How much faster you slide on ice
+    public LayerMask iceLayer;            // Assign this to your ice ground layer
+
+
 
     private Rigidbody rb;
     private Animator animator;
@@ -68,12 +74,38 @@ public class ThirdPersonPlayer : MonoBehaviour
         bool isShiftHeld = Input.GetKey(KeyCode.LeftShift);
         bool shouldRun = isTryingToMove && isShiftHeld;
 
+        // Check if we're on ice
+        bool onIce = IsOnIce();
+
         float speed = shouldRun ? runSpeed : walkSpeed;
+
+        // Apply ice physics if on ice
+        if (onIce)
+        {
+            speed *= iceSpeedMultiplier;
+            rb.linearDamping = iceDrag;
+            rb.angularDamping = iceAngularDrag;
+
+            // Add slight downward force to help stay grounded
+            rb.AddForce(Vector3.down * 5f, ForceMode.Force);
+        }
+        else
+        {
+            // Normal physics
+            rb.linearDamping = 0f; // Reset to your preferred normal drag
+            rb.angularDamping = 0.05f; // Reset to your preferred normal angular drag
+        }
 
         if (isTryingToMove)
         {
             rb.MovePosition(rb.position + moveDirection * speed * Time.fixedDeltaTime);
         }
+    }
+
+    bool IsOnIce()
+    {
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.1f;
+        return Physics.Raycast(rayOrigin, Vector3.down, groundCheckDistance + 0.1f, iceLayer);
     }
 
     void CheckGround()

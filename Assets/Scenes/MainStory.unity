@@ -503,7 +503,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Earth, Ice, and Muze await
+  m_text: Earth, Ice, and Mud mazes await
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}
   m_sharedMaterial: {fileID: -1544243932324802073, guid: 8f0ee02e50c315d4cbd1aeeaf2c02f89, type: 2}

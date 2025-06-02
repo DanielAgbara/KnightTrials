@@ -15,6 +15,12 @@ EditorBuildSettings:
     path: Assets/Scenes/MainStory.unity
     guid: 5b783beb6a2c98d4e8ef3157fbb4b079
   - enabled: 1
+    path: Assets/Scenes/GroundMaze.unity
+    guid: 380dc44901011a14cbadf04b13e932bf
+  - enabled: 1
+    path: Assets/Scenes/IceMaze.unity
+    guid: 4acd5816a22f0b74bbcf69584f160780
+  - enabled: 1
     path: Assets/Scenes/MudMaze.unity
     guid: 05056472cac5dd5448908d4f086ef7d4
   m_configObjects:
