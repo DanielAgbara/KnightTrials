@@ -1,152 +1,233 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class EnemyAI : MonoBehaviour
+[RequireComponent(typeof(Animator))]
+public class SimpleEnemyAI : MonoBehaviour
 {
-    [Header("Target Settings")]
-    public string targetTag = "Knight";
-    public float viewRadius = 15f;
-    [Range(0, 360)] public float viewAngle = 120f;
+    [Header("Movement Settings")]
+    public float moveSpeed;
+    public float moveDistance;
+    public float idleDuration;
+    public float stuckCheckTime;
+    public float stuckDistanceThreshold;
 
-    [Header("Combat Settings")]
-    public float attackRange = 2f;
-    public float attackCooldown = 2f;
-
-    [Header("Patrol Settings")]
-    public float patrolDistance = 5f;
-    public float walkSpeed = 1.5f;
-    public float runSpeed = 4f;
-    public float walkIdleDelay = 2f;
-
-    [Header("Layer Masks")]
+    [Header("Field of View Settings")]
+    public float viewRadius = 6f;
+    [Range(0, 360)]
+    public float viewAngle = 120f;
     public LayerMask targetMask;
     public LayerMask obstacleMask;
 
+    [Header("Attack Settings")]
+    public float attackRange;
+    public float attackCooldown;
+    private float lastAttackTime = -Mathf.Infinity;
+    private bool useAltAttack = false;
+
     private Rigidbody rb;
     private Animator animator;
-    private Transform target;
-    private Vector3 patrolStart;
-    private Vector3 patrolEnd;
-    private bool goingForward = true;
-    private float idleUntilTime;
-    private float lastAttackTime;
-    private float lostSightTimer;
-    private float lostSightThreshold = 5f;
+
+    private Vector3 startPos;
+    private Vector3 moveDirection = Vector3.right;
+    private bool isIdling = false;
+    private float idleTimer = 0f;
+    private float movedDistance = 0f;
+
+    private float stuckTimer = 0f;
+    private Vector3 previousCheckedPosition;
+    private bool awaitingStuckCheck = true;
+
+    private bool playerDetected = false;
+    private Transform playerTransform;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>();
-        patrolStart = transform.position;
-        patrolEnd = transform.position + transform.forward * patrolDistance;
-        idleUntilTime = Time.time;
+
+        startPos = transform.position;
+        previousCheckedPosition = startPos;
+
+        FaceDirection(moveDirection);
     }
 
-    void Update()
+    void FixedUpdate()
     {
-        target = FindVisibleTarget();
+        DetectPlayer();
 
-        if (target != null)
+        if (playerDetected)
         {
-            EngageTarget();
-        }
-        else
-        {
-            lostSightTimer += Time.deltaTime;
-            if (lostSightTimer >= lostSightThreshold)
+            float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+
+            if (distToPlayer <= attackRange)
             {
-                Patrol();
+                AttackPlayer();
             }
-        }
-    }
-
-    void EngageTarget()
-    {
-        Vector3 direction = (target.position - transform.position).normalized;
-        direction.y = 0;
-        float distance = Vector3.Distance(transform.position, target.position);
-
-        if (distance <= attackRange)
-        {
-            animator.SetFloat("Speed", 0f);
-            if (Time.time - lastAttackTime >= attackCooldown)
+            else
             {
-                animator.SetTrigger("Attack");
-                lastAttackTime = Time.time;
+                ChasePlayer();
             }
         }
         else
         {
-            MoveEnemy(direction * runSpeed);
-            animator.SetFloat("Speed", 2f);
+            Patrol();
         }
-
-        RotateTo(direction);
-        lostSightTimer = 0f;
     }
 
+    // ========== PLAYER DETECTION ==========
+    void DetectPlayer()
+    {
+        Collider[] targetsInRadius = Physics.OverlapSphere(transform.position, viewRadius, targetMask);
+        foreach (Collider target in targetsInRadius)
+        {
+            Vector3 dirToTarget = (target.transform.position - transform.position).normalized;
+            float angleToTarget = Vector3.Angle(transform.forward, dirToTarget);
+            float distanceToTarget = Vector3.Distance(transform.position, target.transform.position);
+
+            if (angleToTarget < viewAngle / 2f)
+            {
+                if (!Physics.Raycast(transform.position + Vector3.up * 0.5f, dirToTarget, distanceToTarget, obstacleMask))
+                {
+                    playerDetected = true;
+                    playerTransform = target.transform;
+                    return;
+                }
+            }
+        }
+
+        playerDetected = false;
+        playerTransform = null;
+    }
+
+    // ========== PATROL BEHAVIOR ==========
     void Patrol()
     {
-        if (Time.time < idleUntilTime)
+        if (isIdling)
         {
             animator.SetFloat("Speed", 0f);
+            idleTimer += Time.fixedDeltaTime;
+
+            if (idleTimer >= idleDuration)
+            {
+                isIdling = false;
+                idleTimer = 0f;
+
+                moveDirection = -moveDirection;
+                FaceDirection(moveDirection);
+
+                startPos = transform.position;
+                movedDistance = 0f;
+
+                awaitingStuckCheck = true;
+                stuckTimer = 0f;
+                previousCheckedPosition = transform.position;
+            }
+
             return;
         }
 
-        Vector3 destination = goingForward ? patrolEnd : patrolStart;
-        Vector3 direction = (destination - transform.position).normalized;
-        direction.y = 0;
+        Vector3 move = moveDirection.normalized * moveSpeed * Time.fixedDeltaTime;
+        rb.MovePosition(rb.position + move);
+        animator.SetFloat("Speed", moveSpeed > 0.1f ? 0.5f : 0f);
 
-        float distance = Vector3.Distance(transform.position, destination);
-        if (distance < 0.3f)
+        movedDistance = Vector3.Distance(startPos, transform.position);
+        if (movedDistance >= moveDistance)
         {
-            goingForward = !goingForward;
-            idleUntilTime = Time.time + walkIdleDelay;
+            isIdling = true;
+            idleTimer = 0f;
+            return;
         }
-        else
+
+        if (awaitingStuckCheck)
         {
-            MoveEnemy(direction * walkSpeed);
-            animator.SetFloat("Speed", 0.5f);
-            RotateTo(direction);
+            stuckTimer += Time.fixedDeltaTime;
+            if (stuckTimer >= stuckCheckTime)
+            {
+                float distanceMoved = Vector3.Distance(transform.position, previousCheckedPosition);
+                Debug.DrawRay(transform.position, Vector3.up * 2, Color.red);
+
+                if (distanceMoved <= stuckDistanceThreshold)
+                {
+                    moveDirection = -moveDirection;
+                    FaceDirection(moveDirection);
+
+                    startPos = transform.position;
+                    movedDistance = 0f;
+                }
+
+                stuckTimer = 0f;
+                previousCheckedPosition = transform.position;
+            }
         }
     }
 
-    void MoveEnemy(Vector3 velocity)
+    // ========== CHASE BEHAVIOR ==========
+    void ChasePlayer()
     {
-        rb.MovePosition(transform.position + velocity * Time.deltaTime);
+        if (playerTransform == null) return;
+
+        Vector3 dir = (playerTransform.position - transform.position).normalized;
+        rb.MovePosition(rb.position + dir * moveSpeed * Time.fixedDeltaTime);
+        animator.SetFloat("Speed", 2f);
+        FaceDirection(dir);
     }
 
-    void RotateTo(Vector3 direction)
+    // ========== ATTACK LOGIC ==========
+    void AttackPlayer()
     {
-        if (direction.sqrMagnitude > 0.001f)
+        animator.SetFloat("Speed", 0f); // stop walking animation
+
+        if (Time.time >= lastAttackTime + attackCooldown)
         {
-            Quaternion rot = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, rot, Time.deltaTime * 5f);
+            if (useAltAttack)
+            {
+                animator.SetTrigger("Attack2");
+            }
+            else
+            {
+                animator.SetTrigger("Attack");
+            }
+
+            useAltAttack = !useAltAttack; // alternate next attack
+            lastAttackTime = Time.time;
+            Debug.Log($"{gameObject.name} attacks the player with {(useAltAttack ? "Attack" : "Attack2")}!");
+        }
+
+        FaceDirection(playerTransform.position - transform.position);
+    }
+
+    // ========== ROTATION ==========
+    void FaceDirection(Vector3 dir)
+    {
+        if (dir.sqrMagnitude > 0.01f)
+        {
+            Quaternion lookRotation = Quaternion.LookRotation(dir, Vector3.up);
+            transform.rotation = lookRotation;
         }
     }
 
-    Transform FindVisibleTarget()
-    {
-        Collider[] colliders = Physics.OverlapSphere(transform.position, viewRadius, targetMask);
-
-        foreach (Collider col in colliders)
-        {
-            if (!col.CompareTag(targetTag)) continue;
-
-            Vector3 dirToTarget = (col.transform.position - transform.position).normalized;
-            float angle = Vector3.Angle(transform.forward, dirToTarget);
-            float distance = Vector3.Distance(transform.position, col.transform.position);
-
-            if (angle < viewAngle / 2f && !Physics.Raycast(transform.position, dirToTarget, distance, obstacleMask))
-                return col.transform;
-        }
-
-        return null;
-    }
-
+    // ========== DEBUG FOV ==========
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, viewRadius);
+
+        Vector3 leftBoundary = DirFromAngle(-viewAngle / 2, false);
+        Vector3 rightBoundary = DirFromAngle(viewAngle / 2, false);
+
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position, transform.position + leftBoundary * viewRadius);
+        Gizmos.DrawLine(transform.position, transform.position + rightBoundary * viewRadius);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+
+    Vector3 DirFromAngle(float angleInDegrees, bool global)
+    {
+        if (!global)
+            angleInDegrees += transform.eulerAngles.y;
+
+        return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), 0, Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));
     }
 }
