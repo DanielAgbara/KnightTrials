@@ -23,7 +23,6 @@ public class EnemyAttackHitbox : MonoBehaviour
             if (hit.CompareTag("Player"))
             {
                 hit.GetComponent<HealthSystem>()?.TakeDamage(damageAmount);
-                Debug.Log($"{gameObject.name} hit {hit.name}!");
             }
         }
     }

@@ -8,7 +8,7 @@ public class HealthSystem : MonoBehaviour
     public int currentHealth;
     public string hitAnimationTrigger = "Impact";
     public string deathAnimationTrigger = "Die";
-    public float dieDelay = 5f;
+    public float dieDelay = 3.5f;
 
     public Image healthFillImage;
 
@@ -27,7 +27,6 @@ public class HealthSystem : MonoBehaviour
         if (isDead) return;
 
         currentHealth -= amount;
-        Debug.Log($"{gameObject.name} took {amount} damage. Current health: {currentHealth}");
 
         if (animator && !string.IsNullOrEmpty(hitAnimationTrigger))
         {
@@ -46,25 +45,21 @@ public class HealthSystem : MonoBehaviour
     {
         isDead = true;
 
-        Debug.LogWarning($"{gameObject.name} is dying...");
-
-        if (animator && !string.IsNullOrEmpty(deathAnimationTrigger))
+        // Use enemy script if available
+        if (TryGetComponent<SimpleEnemyAI>(out var enemyAI))
         {
-            animator.SetTrigger(deathAnimationTrigger);
+            enemyAI.Die();
+            yield break; // Stop coroutine; enemyAI handles destruction
         }
 
-        // Optionally disable collider or navagent here
-        Collider col = GetComponent<Collider>();
-        if (col) col.enabled = false;
-
-        // Optional: disable Rigidbody physics
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (rb) rb.linearVelocity = Vector3.zero;
+        // Fallback: handle self-destruction
+        if (animator && !string.IsNullOrEmpty(deathAnimationTrigger))
+            animator.SetTrigger(deathAnimationTrigger);
 
         yield return new WaitForSeconds(dieDelay);
-
         Destroy(gameObject);
     }
+
 
     void UpdateHealthBar()
     {
