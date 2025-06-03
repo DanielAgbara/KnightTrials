@@ -214,12 +214,38 @@ public class SimpleEnemyAI : MonoBehaviour
         if (isDead) return;
 
         isDead = true;
-        animator.SetTrigger("Die");
-        animator.SetFloat("Speed", 0f);
 
-        // Optional: delay before destruction
-        Destroy(gameObject, 2.5f);  // Match with death animation length
+        // Lock movement and animation
+        if (animator != null)
+        {
+            animator.SetTrigger("Die");
+            animator.SetFloat("Speed", 0f);
+        }
+
+        // Stop physics movement
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.isKinematic = true; // Stop further physics
+        }
+
+        // Disable collider if needed
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = false;
+
+        // Optional: disable all children colliders (e.g., hitboxes)
+        foreach (Collider childCol in GetComponentsInChildren<Collider>())
+        {
+            childCol.enabled = false;
+        }
+
+        // Optional: disable scripts or components
+        this.enabled = false; // disables SimpleEnemyAI script
+
+        // Destroy after animation delay
+        Destroy(gameObject, 3.5f); // ensure this matches animation length
     }
+
 
     // ========== ROTATION ==========
     void FaceDirection(Vector3 dir)

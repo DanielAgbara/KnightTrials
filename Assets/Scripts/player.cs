@@ -168,14 +168,12 @@ public class Player : MonoBehaviour
     {
         if (isBlocking)
         {
-            Debug.Log("Player blocked the attack.");
             return;
         }
 
         if (healthSystem != null)
         {
             healthSystem.TakeDamage(amount);
-            Debug.Log("Player took damage: " + amount);
         }
     }
 
@@ -189,7 +187,6 @@ public class Player : MonoBehaviour
             if (targetHealth != null)
             {
                 targetHealth.TakeDamage(40);
-                Debug.Log("Player dealt 40 damage to: " + hit.name);
             }
         }
     }
