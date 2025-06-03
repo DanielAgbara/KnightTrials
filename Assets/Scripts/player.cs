@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class ThirdPersonPlayer : MonoBehaviour
+public class Player : MonoBehaviour
 {
     [Header("Movement Settings")]
     public float walkSpeed = 20f;
@@ -16,7 +16,12 @@ public class ThirdPersonPlayer : MonoBehaviour
     [Header("Camera Reference")]
     public Transform cameraTransform;
 
-    
+    [Header("Combat Settings")]
+    public bool isBlocking = false;  // Public for enemy to check
+    public HealthSystem healthSystem;
+    public float attackCooldown = 1.5f;
+    private float lastAttackTime = -Mathf.Infinity;
+    private bool useAltAttack = false;
 
     private Rigidbody rb;
     private Animator animator;
@@ -27,6 +32,7 @@ public class ThirdPersonPlayer : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         animator = GetComponent<Animator>();
+        healthSystem = GetComponent<HealthSystem>();
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -90,17 +96,23 @@ public class ThirdPersonPlayer : MonoBehaviour
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            animator.SetTrigger("IsJumping"); // Assuming 'IsJumping' is a trigger
+            animator.SetTrigger("IsJumping");
         }
 
         // Attack
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && Time.time >= lastAttackTime + attackCooldown)
         {
-            animator.SetTrigger("IsAttacking");
+            if (useAltAttack)
+                animator.SetTrigger("Attack2");
+            else
+                animator.SetTrigger("Attack");
+
+            useAltAttack = !useAltAttack;
+            lastAttackTime = Time.time;
         }
 
         // Block
-        bool isBlocking = Input.GetMouseButton(1);
+        isBlocking = Input.GetMouseButton(1);
         animator.SetBool("IsBlocking", isBlocking);
     }
 
@@ -115,10 +127,7 @@ public class ThirdPersonPlayer : MonoBehaviour
 
         if (isMoving)
         {
-            if (Input.GetKey(KeyCode.LeftShift))
-                speedParam = 2.0f; // Run
-            else
-                speedParam = 0.5f; // Walk
+            speedParam = Input.GetKey(KeyCode.LeftShift) ? 2.0f : 0.5f;
         }
 
         animator.SetFloat("Speed", speedParam);
@@ -150,6 +159,37 @@ public class ThirdPersonPlayer : MonoBehaviour
             if (camForward.sqrMagnitude > 0.01f)
             {
                 transform.rotation = Quaternion.LookRotation(camForward);
+            }
+        }
+    }
+
+    // ------------------ External Damage Interface ------------------
+    public void ReceiveDamage(int amount)
+    {
+        if (isBlocking)
+        {
+            Debug.Log("Player blocked the attack.");
+            return;
+        }
+
+        if (healthSystem != null)
+        {
+            healthSystem.TakeDamage(amount);
+            Debug.Log("Player took damage: " + amount);
+        }
+    }
+
+    // =================== ANIMATION EVENT ===================
+    public void DealDamageToEnemy()
+    {
+        Collider[] hits = Physics.OverlapSphere(transform.position + transform.forward, 50f, LayerMask.GetMask("Enemy"));
+        foreach (Collider hit in hits)
+        {
+            HealthSystem targetHealth = hit.GetComponent<HealthSystem>();
+            if (targetHealth != null)
+            {
+                targetHealth.TakeDamage(40);
+                Debug.Log("Player dealt 40 damage to: " + hit.name);
             }
         }
     }
