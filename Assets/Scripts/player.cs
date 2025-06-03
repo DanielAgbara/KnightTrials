@@ -180,7 +180,7 @@ public class Player : MonoBehaviour
     // =================== ANIMATION EVENT ===================
     public void DealDamageToEnemy()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position + transform.forward, 50f, LayerMask.GetMask("Enemy"));
+        Collider[] hits = Physics.OverlapSphere(transform.position + transform.forward, 20f, LayerMask.GetMask("Enemy"));
         foreach (Collider hit in hits)
         {
             HealthSystem targetHealth = hit.GetComponent<HealthSystem>();
