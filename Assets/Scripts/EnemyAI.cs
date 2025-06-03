@@ -19,8 +19,8 @@ public class SimpleEnemyAI : MonoBehaviour
     public LayerMask obstacleMask;
 
     [Header("Attack Settings")]
-    public float attackRange;
-    public float attackCooldown;
+    public float attackRange = 1.5f;
+    public float attackCooldown = 2f;
     private float lastAttackTime = -Mathf.Infinity;
     private bool useAltAttack = false;
 
@@ -40,6 +40,8 @@ public class SimpleEnemyAI : MonoBehaviour
     private bool playerDetected = false;
     private Transform playerTransform;
 
+    private bool isDead = false;  // 🛑 Flag to lock out all behavior after death
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -53,6 +55,8 @@ public class SimpleEnemyAI : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (isDead) return;  // ⛔ Stop all behavior if dead
+
         DetectPlayer();
 
         if (playerDetected)
@@ -60,13 +64,9 @@ public class SimpleEnemyAI : MonoBehaviour
             float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
             if (distToPlayer <= attackRange)
-            {
                 AttackPlayer();
-            }
             else
-            {
                 ChasePlayer();
-            }
         }
         else
         {
@@ -77,6 +77,8 @@ public class SimpleEnemyAI : MonoBehaviour
     // ========== PLAYER DETECTION ==========
     void DetectPlayer()
     {
+        if (isDead) return;
+
         Collider[] targetsInRadius = Physics.OverlapSphere(transform.position, viewRadius, targetMask);
         foreach (Collider target in targetsInRadius)
         {
@@ -102,6 +104,8 @@ public class SimpleEnemyAI : MonoBehaviour
     // ========== PATROL BEHAVIOR ==========
     void Patrol()
     {
+        if (isDead) return;
+
         if (isIdling)
         {
             animator.SetFloat("Speed", 0f);
@@ -122,7 +126,6 @@ public class SimpleEnemyAI : MonoBehaviour
                 stuckTimer = 0f;
                 previousCheckedPosition = transform.position;
             }
-
             return;
         }
 
@@ -164,7 +167,7 @@ public class SimpleEnemyAI : MonoBehaviour
     // ========== CHASE BEHAVIOR ==========
     void ChasePlayer()
     {
-        if (playerTransform == null) return;
+        if (isDead || playerTransform == null) return;
 
         Vector3 dir = (playerTransform.position - transform.position).normalized;
         rb.MovePosition(rb.position + dir * moveSpeed * Time.fixedDeltaTime);
@@ -172,28 +175,50 @@ public class SimpleEnemyAI : MonoBehaviour
         FaceDirection(dir);
     }
 
-    // ========== ATTACK LOGIC ==========
+    // ========== ATTACK BEHAVIOR ==========
     void AttackPlayer()
     {
-        animator.SetFloat("Speed", 0f); // stop walking animation
+        if (isDead) return;
+
+        animator.SetFloat("Speed", 0f);
 
         if (Time.time >= lastAttackTime + attackCooldown)
         {
             if (useAltAttack)
-            {
                 animator.SetTrigger("Attack2");
-            }
             else
-            {
                 animator.SetTrigger("Attack");
-            }
 
-            useAltAttack = !useAltAttack; // alternate next attack
+            useAltAttack = !useAltAttack;
             lastAttackTime = Time.time;
-            Debug.Log($"{gameObject.name} attacks the player with {(useAltAttack ? "Attack" : "Attack2")}!");
         }
 
         FaceDirection(playerTransform.position - transform.position);
+    }
+
+    // ========== DAMAGE APPLICATION ==========
+    public void DealDamageToPlayer()
+    {
+        if (isDead || playerTransform == null) return;
+
+        Player playerScript = playerTransform.GetComponent<Player>();
+        if (playerScript != null)
+        {
+            playerScript.ReceiveDamage(10);
+        }
+    }
+
+    // ========== DEATH (CALLED BY HealthSystem) ==========
+    public void Die()
+    {
+        if (isDead) return;
+
+        isDead = true;
+        animator.SetTrigger("Die");
+        animator.SetFloat("Speed", 0f);
+
+        // Optional: delay before destruction
+        Destroy(gameObject, 2.5f);  // Match with death animation length
     }
 
     // ========== ROTATION ==========
@@ -204,30 +229,5 @@ public class SimpleEnemyAI : MonoBehaviour
             Quaternion lookRotation = Quaternion.LookRotation(dir, Vector3.up);
             transform.rotation = lookRotation;
         }
-    }
-
-    // ========== DEBUG FOV ==========
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, viewRadius);
-
-        Vector3 leftBoundary = DirFromAngle(-viewAngle / 2, false);
-        Vector3 rightBoundary = DirFromAngle(viewAngle / 2, false);
-
-        Gizmos.color = Color.blue;
-        Gizmos.DrawLine(transform.position, transform.position + leftBoundary * viewRadius);
-        Gizmos.DrawLine(transform.position, transform.position + rightBoundary * viewRadius);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
-    }
-
-    Vector3 DirFromAngle(float angleInDegrees, bool global)
-    {
-        if (!global)
-            angleInDegrees += transform.eulerAngles.y;
-
-        return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), 0, Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));
     }
 }

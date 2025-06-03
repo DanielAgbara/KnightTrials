@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: fe6747eaa97ea1e4f9044d6216818628
+guid: a1c1c4c4835b1e8459a78ba7936681b7
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -15,7 +15,7 @@ ModelImporter:
     resampleCurves: 1
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
-    motionNodeName: <Root Transform>
+    motionNodeName: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -35,7 +35,7 @@ ModelImporter:
       takeName: mixamo.com
       internalID: -203655887218126122
       firstFrame: 0
-      lastFrame: 106
+      lastFrame: 45
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -55,24 +55,10 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
-      - time: 0.13
-        functionName: DealDamageToPlayer
+      - time: 0.745
+        functionName: DealDamageToEnemy
         data: 
-        objectReferenceParameter: {fileID: 11500000, guid: c4be6e8d279a2194db514dbca9e278f7, type: 3}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.385
-        functionName: DealDamageToPlayer
-        data: 
-        objectReferenceParameter: {fileID: 11500000, guid: c4be6e8d279a2194db514dbca9e278f7, type: 3}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.825
-        functionName: DealDamageToPlayer
-        data: 
-        objectReferenceParameter: {fileID: 11500000, guid: c4be6e8d279a2194db514dbca9e278f7, type: 3}
+        objectReferenceParameter: {fileID: 11500000, guid: b356568a06b016844a5810a6fcc833c8, type: 3}
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
@@ -85,7 +71,7 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    addColliders: 1
+    addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
     importPhysicalCameras: 1
