@@ -45465,6 +45465,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1397827379277298401, guid: b3218965c8147a3428b53f2bc5a92a7e, type: 3}
+      propertyPath: jumpSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 4e349dc959014a845b9aa317d1c2b7f0, type: 3}
+    - target: {fileID: 1397827379277298401, guid: b3218965c8147a3428b53f2bc5a92a7e, type: 3}
+      propertyPath: attackSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 323e15cfe809e114ab92c9f4b25e8bc2, type: 3}
+    - target: {fileID: 1397827379277298401, guid: b3218965c8147a3428b53f2bc5a92a7e, type: 3}
       propertyPath: cameraTransform
       value: 
       objectReference: {fileID: 1124675498}

@@ -12,6 +12,8 @@ public class MenuUI : MonoBehaviour
     public GameObject playButton;
     public GameObject helpButton;
     public GameObject levelButton;
+    public AudioSource audioSource;
+    public AudioClip onClickClip;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -72,5 +74,10 @@ public class MenuUI : MonoBehaviour
     {
         levelPanel.SetActive(false);
         SceneManager.LoadScene("MudMaze", LoadSceneMode.Single);
+    }
+
+    public void PlayClickSound()
+    {
+        audioSource.PlayOneShot(onClickClip);
     }
 }

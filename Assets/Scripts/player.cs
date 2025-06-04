@@ -27,6 +27,12 @@ public class Player : MonoBehaviour
     private Animator animator;
     private bool isGrounded;
 
+    public AudioSource audioSource;
+    public AudioClip attackSound;
+    public AudioClip jumpSound;
+    public AudioClip hitSound;
+    public AudioClip blockSound;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -95,6 +101,7 @@ public class Player : MonoBehaviour
         // Jump
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
+            audioSource.PlayOneShot(jumpSound);
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             animator.SetTrigger("IsJumping");
         }
@@ -107,6 +114,10 @@ public class Player : MonoBehaviour
             else
                 animator.SetTrigger("Attack");
 
+            // Play attack sound
+            if (attackSound != null && audioSource != null)
+                audioSource.PlayOneShot(attackSound);
+            
             useAltAttack = !useAltAttack;
             lastAttackTime = Time.time;
         }
@@ -168,11 +179,13 @@ public class Player : MonoBehaviour
     {
         if (isBlocking)
         {
+            audioSource.PlayOneShot(blockSound);
             return;
         }
 
         if (healthSystem != null)
         {
+            audioSource.PlayOneShot(hitSound);
             healthSystem.TakeDamage(amount);
         }
     }
@@ -186,6 +199,7 @@ public class Player : MonoBehaviour
             HealthSystem targetHealth = hit.GetComponent<HealthSystem>();
             if (targetHealth != null)
             {
+                audioSource.PlayOneShot(hitSound);
                 targetHealth.TakeDamage(40);
             }
         }
